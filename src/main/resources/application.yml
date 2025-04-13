@@ -9,7 +9,6 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       acks: all
       properties:
-         retries: 10
          delivery:
            timeout:
              ms: 120000
@@ -24,8 +23,6 @@ spring:
                 request:
                   per:
                     connection: 5
-         enable:
-            idenpotence: true
 
 server:
   port: 8100

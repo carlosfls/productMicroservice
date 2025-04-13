@@ -4,6 +4,8 @@ import com.carlosacademic.producteventscore.ProductCreatedEvent;
 import com.carlosacademic.productmicroservice.model.ProductCreateModel;
 import com.carlosacademic.productmicroservice.services.ProductService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
@@ -20,25 +23,28 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public String createAsync(ProductCreateModel model) {
         String productId = UUID.randomUUID().toString();
-        //TODO SAVE IN DB
 
         //PUBLISH THE EVENT
         ProductCreatedEvent productCreatedEvent = new ProductCreatedEvent(
                 productId, model.title(), model.price(), model.quantity());
 
+        ProducerRecord<String, ProductCreatedEvent> productCreatedEventProducerRecord =
+                new ProducerRecord<>("product-created-events-topic", productId, productCreatedEvent);
+
+        productCreatedEventProducerRecord.headers().add("messageId", productId.getBytes());
+
         CompletableFuture<SendResult<String, ProductCreatedEvent>> future =
-                kafkaTemplate.send("product-created-events-topic", productId, productCreatedEvent);
+                kafkaTemplate.send(productCreatedEventProducerRecord);
 
         future.whenComplete((result, exception) -> {
             if (exception!=null){
-                System.out.println("Error: "+ exception.getMessage());
+                log.info("Error: {}", exception.getMessage());
             }else {
-                System.out.println("Product Send!!");
+                log.info("Product Send!!");
 
-                System.out.println(result.getRecordMetadata().partition());
-                System.out.println(result.getRecordMetadata().topic());
-                System.out.println(result.getRecordMetadata().offset());
-
+                log.info("Title {}",result.getRecordMetadata().partition());
+                log.info("Topic: {}",result.getRecordMetadata().topic());
+                log.info("Offset {}",result.getRecordMetadata().offset());
             }
         });
 

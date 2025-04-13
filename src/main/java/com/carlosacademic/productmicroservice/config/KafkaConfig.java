@@ -19,26 +19,23 @@ public class KafkaConfig {
 
     @Value("${spring.kafka.producer.bootstrap-servers}")
     private String bootstrapServers;
-
     @Value("${spring.kafka.producer.key-serializer}")
     private String keySerializer;
-
     @Value("${spring.kafka.producer.value-serializer}")
     private String valueSerializer;
-
     @Value("${spring.kafka.producer.acks}")
     private String acks;
-
     @Value("${spring.kafka.producer.properties.delivery.timeout.ms}")
     private String deliveryTimeout;
-
     @Value("${spring.kafka.producer.properties.linger.ms}")
     private String linger;
-
     @Value("${spring.kafka.producer.properties.request.timeout.ms}")
     private String requestTimeout;
+    @Value("${spring.kafka.producer.properties.max.in.flight.request.per.connection}")
+    private String maxInFlightRequestPerConnection;
 
-    Map<String, Object> producerConfigs() {
+    @Bean
+    ProducerFactory<String, ProductCreatedEvent> producerFactory(){
         Map<String, Object> config = new HashMap<>();
         config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, keySerializer);
@@ -47,15 +44,10 @@ public class KafkaConfig {
         config.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, deliveryTimeout);
         config.put(ProducerConfig.LINGER_MS_CONFIG, linger);
         config.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, requestTimeout);
-        config.put(ProducerConfig.RETRIES_CONFIG, 10);
-        config.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, 5);
+        config.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, maxInFlightRequestPerConnection);
         config.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
-        return config;
-    }
 
-    @Bean
-    ProducerFactory<String, ProductCreatedEvent> producerFactory(){
-        return new DefaultKafkaProducerFactory<>(producerConfigs());
+        return new DefaultKafkaProducerFactory<>(config);
     }
 
     @Bean
