@@ -3,6 +3,7 @@ package com.carlosacademic.productmicroservice.config;
 import com.carlosacademic.producteventscore.ProductCreatedEvent;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,6 +11,7 @@ import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.support.serializer.JsonSerializer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,29 +19,25 @@ import java.util.Map;
 @Configuration
 public class KafkaConfig {
 
-    @Value("${spring.kafka.producer.bootstrap-servers}")
+    @Value("${kafka.bootstrap-servers}")
     private String bootstrapServers;
-    @Value("${spring.kafka.producer.key-serializer}")
-    private String keySerializer;
-    @Value("${spring.kafka.producer.value-serializer}")
-    private String valueSerializer;
-    @Value("${spring.kafka.producer.acks}")
+    @Value("${kafka.acks}")
     private String acks;
-    @Value("${spring.kafka.producer.properties.delivery.timeout.ms}")
+    @Value("${kafka.delivery.timeout}")
     private String deliveryTimeout;
-    @Value("${spring.kafka.producer.properties.linger.ms}")
+    @Value("${kafka.linger}")
     private String linger;
-    @Value("${spring.kafka.producer.properties.request.timeout.ms}")
+    @Value("${kafka.request.timeout}")
     private String requestTimeout;
-    @Value("${spring.kafka.producer.properties.max.in.flight.request.per.connection}")
+    @Value("${kafka.max-in-flight-request-per-connection}")
     private String maxInFlightRequestPerConnection;
 
     @Bean
-    ProducerFactory<String, ProductCreatedEvent> producerFactory(){
+    public ProducerFactory<String, ProductCreatedEvent> producerFactory(){
         Map<String, Object> config = new HashMap<>();
         config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, keySerializer);
-        config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, valueSerializer);
+        config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
         config.put(ProducerConfig.ACKS_CONFIG, acks);
         config.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, deliveryTimeout);
         config.put(ProducerConfig.LINGER_MS_CONFIG, linger);
@@ -51,12 +49,12 @@ public class KafkaConfig {
     }
 
     @Bean
-    KafkaTemplate<String, ProductCreatedEvent> kafkaTemplate(){
+    public KafkaTemplate<String, ProductCreatedEvent> kafkaTemplate(){
         return new KafkaTemplate<>(producerFactory());
     }
 
     @Bean
-    NewTopic productCreatedEventsTopic(){
+    public NewTopic productCreatedEventsTopic(){
         return TopicBuilder.name("product-created-events-topic")
                 .partitions(3)
                 .replicas(2)
