@@ -42,9 +42,9 @@ public class ProductServiceImpl implements ProductService {
             }else {
                 log.info("Product Send!!");
 
-                log.info("Title {}",result.getRecordMetadata().partition());
+                log.info("Partition: {}",result.getRecordMetadata().partition());
                 log.info("Topic: {}",result.getRecordMetadata().topic());
-                log.info("Offset {}",result.getRecordMetadata().offset());
+                log.info("Offset: {}",result.getRecordMetadata().offset());
             }
         });
 
