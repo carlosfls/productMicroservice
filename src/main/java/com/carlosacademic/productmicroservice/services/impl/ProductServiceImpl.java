@@ -3,9 +3,9 @@ package com.carlosacademic.productmicroservice.services.impl;
 import com.carlosacademic.producteventscore.ProductCreatedEvent;
 import com.carlosacademic.productmicroservice.model.ProductCreateModel;
 import com.carlosacademic.productmicroservice.services.ProductService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
@@ -13,12 +13,16 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
 
+    private final Logger LOG = LoggerFactory.getLogger(ProductServiceImpl.class);
+
     private final KafkaTemplate<String, ProductCreatedEvent> kafkaTemplate;
+
+    public ProductServiceImpl(KafkaTemplate<String, ProductCreatedEvent> kafkaTemplate) {
+        this.kafkaTemplate = kafkaTemplate;
+    }
 
     @Override
     public String createAsync(ProductCreateModel model) {
@@ -38,13 +42,13 @@ public class ProductServiceImpl implements ProductService {
 
         future.whenComplete((result, exception) -> {
             if (exception!=null){
-                log.info("Error: {}", exception.getMessage());
+                LOG.info("Error: {}", exception.getMessage());
             }else {
-                log.info("Product Send!!");
+                LOG.info("Product Send!!");
 
-                log.info("Partition: {}",result.getRecordMetadata().partition());
-                log.info("Topic: {}",result.getRecordMetadata().topic());
-                log.info("Offset: {}",result.getRecordMetadata().offset());
+                LOG.info("Partition: {}", result.getRecordMetadata().partition());
+                LOG.info("Topic: {}", result.getRecordMetadata().topic());
+                LOG.info("Offset: {}", result.getRecordMetadata().offset());
             }
         });
 
