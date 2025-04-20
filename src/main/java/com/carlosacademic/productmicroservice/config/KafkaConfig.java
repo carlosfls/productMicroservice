@@ -12,6 +12,7 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.support.serializer.JsonSerializer;
+import org.springframework.kafka.transaction.KafkaTransactionManager;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,8 +33,11 @@ public class KafkaConfig {
     @Value("${kafka.max-in-flight-request-per-connection}")
     private String maxInFlightRequestPerConnection;
 
+    @Value("${kafka.transaction-id-prefix}")
+    private String transactionIdPrefix;
+
     @Bean
-    public ProducerFactory<String, ProductCreatedEvent> producerFactory(){
+    ProducerFactory<String, ProductCreatedEvent> producerFactory(){
         Map<String, Object> config = new HashMap<>();
         config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -44,17 +48,25 @@ public class KafkaConfig {
         config.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, requestTimeout);
         config.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, maxInFlightRequestPerConnection);
         config.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
+        //enable transaction
+        config.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transactionIdPrefix);
+
 
         return new DefaultKafkaProducerFactory<>(config);
     }
 
     @Bean
-    public KafkaTemplate<String, ProductCreatedEvent> kafkaTemplate(){
+    KafkaTransactionManager<String, ProductCreatedEvent> kafkaTransactionManager(){
+        return new KafkaTransactionManager<>(producerFactory());
+    }
+
+    @Bean
+    KafkaTemplate<String, ProductCreatedEvent> kafkaTemplate(){
         return new KafkaTemplate<>(producerFactory());
     }
 
     @Bean
-    public NewTopic productCreatedEventsTopic(){
+    NewTopic productCreatedEventsTopic(){
         return TopicBuilder.name("product-created-events-topic")
                 .partitions(3)
                 .replicas(2)

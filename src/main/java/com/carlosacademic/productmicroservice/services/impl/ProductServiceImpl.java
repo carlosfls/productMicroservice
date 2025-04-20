@@ -1,6 +1,7 @@
 package com.carlosacademic.productmicroservice.services.impl;
 
 import com.carlosacademic.producteventscore.ProductCreatedEvent;
+import com.carlosacademic.productmicroservice.model.EventCreationException;
 import com.carlosacademic.productmicroservice.model.ProductCreateModel;
 import com.carlosacademic.productmicroservice.services.ProductService;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -9,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -24,18 +26,11 @@ public class ProductServiceImpl implements ProductService {
         this.kafkaTemplate = kafkaTemplate;
     }
 
+    @Transactional(value = "kafkaTransactionManager", rollbackFor = {EventCreationException.class})
     @Override
     public String createAsync(ProductCreateModel model) {
         String productId = UUID.randomUUID().toString();
-
-        //PUBLISH THE EVENT
-        ProductCreatedEvent productCreatedEvent = new ProductCreatedEvent(
-                productId, model.title(), model.price(), model.quantity());
-
-        ProducerRecord<String, ProductCreatedEvent> productCreatedEventProducerRecord =
-                new ProducerRecord<>("product-created-events-topic", productId, productCreatedEvent);
-
-        productCreatedEventProducerRecord.headers().add("messageId", UUID.randomUUID().toString().getBytes());
+        ProducerRecord<String, ProductCreatedEvent> productCreatedEventProducerRecord = getProducerRecord(productId, model);
 
         CompletableFuture<SendResult<String, ProductCreatedEvent>> future =
                 kafkaTemplate.send(productCreatedEventProducerRecord);
@@ -43,6 +38,7 @@ public class ProductServiceImpl implements ProductService {
         future.whenComplete((result, exception) -> {
             if (exception!=null){
                 LOG.info("Error: {}", exception.getMessage());
+                throw new EventCreationException(exception.getMessage());
             }else {
                 LOG.info("Product Send!!");
 
@@ -53,5 +49,18 @@ public class ProductServiceImpl implements ProductService {
         });
 
         return productId;
+    }
+
+    private ProducerRecord<String, ProductCreatedEvent> getProducerRecord(String productId, ProductCreateModel model) {
+
+        ProductCreatedEvent productCreatedEvent = new ProductCreatedEvent(
+                productId, model.title(), model.price(), model.quantity());
+
+        ProducerRecord<String, ProductCreatedEvent> productCreatedEventProducerRecord =
+                new ProducerRecord<>("product-created-events-topic", productId, productCreatedEvent);
+
+        productCreatedEventProducerRecord.headers().add("messageId", UUID.randomUUID().toString().getBytes());
+
+        return productCreatedEventProducerRecord;
     }
 }

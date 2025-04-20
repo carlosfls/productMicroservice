@@ -11,6 +11,14 @@ kafka:
   request:
     timeout: 30000
   max-in-flight-request-per-connection: 5
+  transaction-id-prefix: product-service-
 
 server:
   port: 8100
+
+logging:
+  level:
+    org:
+      springframework:
+        kafka:
+          transaction: TRACE
