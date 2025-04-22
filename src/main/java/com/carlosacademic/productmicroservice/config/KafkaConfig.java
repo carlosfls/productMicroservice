@@ -1,6 +1,7 @@
 package com.carlosacademic.productmicroservice.config;
 
 import com.carlosacademic.producteventscore.ProductCreatedEvent;
+import jakarta.persistence.EntityManagerFactory;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -13,6 +14,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.springframework.kafka.transaction.KafkaTransactionManager;
+import org.springframework.orm.jpa.JpaTransactionManager;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -58,6 +60,11 @@ public class KafkaConfig {
     @Bean
     KafkaTransactionManager<String, ProductCreatedEvent> kafkaTransactionManager(){
         return new KafkaTransactionManager<>(producerFactory());
+    }
+
+    @Bean
+    JpaTransactionManager transactionManager(EntityManagerFactory entityManagerFactory){
+        return new JpaTransactionManager(entityManagerFactory);
     }
 
     @Bean
