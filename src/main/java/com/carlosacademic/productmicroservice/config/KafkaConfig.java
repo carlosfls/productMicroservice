@@ -53,7 +53,6 @@ public class KafkaConfig {
         //enable transaction
         config.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transactionIdPrefix);
 
-
         return new DefaultKafkaProducerFactory<>(config);
     }
 

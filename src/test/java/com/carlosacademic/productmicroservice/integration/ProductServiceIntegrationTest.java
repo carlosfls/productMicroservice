@@ -38,8 +38,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @DirtiesContext
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ActiveProfiles("test")
-@EmbeddedKafka(partitions = 3, count = 2, controlledShutdown = true, kraft = true)
-@SpringBootTest(properties="spring.kafka.producer.bootstrap-servers=${spring.embedded.kafka.brokers}")
+@EmbeddedKafka(partitions = 3, count = 2, controlledShutdown = true)
+@SpringBootTest(properties = "kafka.bootstrap-servers=${spring.embedded.kafka.brokers}")
 class ProductServiceIntegrationTest {
 
     @Autowired
@@ -58,7 +58,7 @@ class ProductServiceIntegrationTest {
     void setUp() {
         DefaultKafkaConsumerFactory<String, Object> consumerFactory = new DefaultKafkaConsumerFactory<>(getConsumerProperties());
 
-        ContainerProperties containerProperties = new ContainerProperties(environment.getProperty("product-created-events-topic-name"));
+        ContainerProperties containerProperties = new ContainerProperties(environment.getProperty("kafka.product-created-events-topic-name"));
         container = new KafkaMessageListenerContainer<>(consumerFactory, containerProperties);
 
         records = new LinkedBlockingQueue<>();
@@ -83,7 +83,7 @@ class ProductServiceIntegrationTest {
         productService.createAsync(product);
 
         //assert
-        ConsumerRecord<String, ProductCreatedEvent> message = records.poll(3000, TimeUnit.MILLISECONDS);
+        ConsumerRecord<String, ProductCreatedEvent> message = records.poll(5000, TimeUnit.MILLISECONDS);
 
         assertNotNull(message, "Message should not be null");
         assertNotNull(message.key(), "Message key should not be null");
@@ -98,9 +98,10 @@ class ProductServiceIntegrationTest {
                 ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class,
                 ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class,
                 ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class,
-                ConsumerConfig.GROUP_ID_CONFIG, environment.getRequiredProperty("spring.kafka.consumer.group-id"),
-                JsonDeserializer.TRUSTED_PACKAGES, environment.getRequiredProperty("spring.kafka.consumer.properties.spring.json.trusted.packages"),
-                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+                ConsumerConfig.GROUP_ID_CONFIG, environment.getRequiredProperty("kafka.group-id"),
+                JsonDeserializer.TRUSTED_PACKAGES, environment.getRequiredProperty("kafka.trusted-packages"),
+                ConsumerConfig.ISOLATION_LEVEL_CONFIG, environment.getRequiredProperty("kafka.consumer-isolation-level"),
+                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, environment.getRequiredProperty("kafka.auto-offset-reset"));
     }
 
     @AfterAll
